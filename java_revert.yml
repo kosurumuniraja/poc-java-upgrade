@@ -1,0 +1,50 @@
+---
+- name: Set Java 17 as the default on Debian systems
+  hosts: java_servers
+  become: yes
+  vars:
+    old_java_version: "17"
+    old_java_package_debian: "openjdk-17-jdk"
+  tasks:
+    - name: Remove newer Java versions on Debian-based systems
+      apt:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - openjdk-18-jdk
+        - openjdk-21-jdk
+      when: ansible_os_family == "Debian"
+
+    - name: Install Java 17 on Debian-based systems
+      apt:
+        name: "{{ old_java_package_debian }}"
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Update Java alternatives to use Java 17
+      alternatives:
+        name: java
+        path: /usr/lib/jvm/java-{{ old_java_version }}-openjdk-amd64/bin/java
+        priority: 1711
+      when: ansible_os_family == "Debian"
+
+    - name: Set JAVA_HOME environment variable
+      lineinfile:
+        path: /etc/profile.d/java.sh
+        line: 'export JAVA_HOME=/usr/lib/jvm/java-{{ old_java_version }}-openjdk-amd64'
+        create: yes
+
+    - name: Source Java environment variables using bash
+      shell: . /etc/profile.d/java.sh
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
+
+    - name: Verify Java version
+      shell: java -version
+      register: java_version_output
+
+    - name: Display Java version
+      debug:
+        var: java_version_output.stdout
+

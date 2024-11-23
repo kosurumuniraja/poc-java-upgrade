@@ -1,0 +1,53 @@
+---
+- name: Upgrade Java to the latest version on servers
+  hosts: java_servers
+  become: yes
+  vars:
+    new_java_version: "21"
+    java_package_debian: "openjdk-21-jdk"  # Adjust based on your distribution's package name
+    java_package_redhat: "java-21-openjdk" # Adjust based on your distribution's package name
+  tasks:
+    - name: Update package cache on Debian-based systems
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install Java 21 on Debian-based systems
+      apt:
+        name: "{{ java_package_debian }}"
+        state: latest
+      when: ansible_os_family == "Debian"
+
+    - name: Install Java 21 on RedHat-based systems
+      yum:
+        name: "{{ java_package_redhat }}"
+        state: latest
+      when: ansible_os_family == "RedHat"
+
+    - name: Update Java alternatives to use Java 21
+      alternatives:
+        name: java
+        path: /usr/lib/jvm/java-{{ new_java_version }}-openjdk-amd64/bin/java
+        priority: 2111
+      when: ansible_os_family == "Debian"
+
+    - name: Set JAVA_HOME environment variable
+      lineinfile:
+        path: /etc/profile.d/java.sh
+        line: 'export JAVA_HOME=/usr/lib/jvm/java-{{ new_java_version }}-openjdk-amd64'
+        create: yes
+
+    - name: Source Java environment variables using bash
+      shell: . /etc/profile.d/java.sh
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
+
+    - name: Verify Java version
+      shell: java -version
+      register: java_version_output
+
+    - name: Display Java version
+      debug:
+        var: java_version_output.stdout
+
