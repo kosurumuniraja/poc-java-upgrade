@@ -44,7 +44,7 @@ Prints the output of the java -version command using the debug module.
 
 This playbook ensures that Java 21 is installed, set as the default version, and its environment variables are configured. It is designed to work on both Debian and RedHat-based Linux distributions.
 
-****#poc-java-revert_old_version********
+# poc-java-revert_old_version
 
 This Ansible playbook is designed to set Java 17 as the default version on Debian-based servers. Here's a brief explanation:
 
